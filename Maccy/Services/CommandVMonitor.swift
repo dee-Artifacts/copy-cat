@@ -179,6 +179,12 @@ class CommandVMonitor {
       return Unmanaged.passRetained(event)
     }
 
+    // Quick Paste (hold-⌘V + ⌥-navigation) is a paid/trial feature. When access
+    // has lapsed the tap goes transparent, so ⌘V is a normal system paste again.
+    if !LicenseManager.quickPasteAllowedFlag {
+      return Unmanaged.passRetained(event)
+    }
+
     if isReinjecting || isSimulatingPaste {
       return Unmanaged.passRetained(event)
     }

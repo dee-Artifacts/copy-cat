@@ -8,22 +8,48 @@ struct IgnorePasteboardTypesSettingsView: View {
   @State private var edit = ""
   @State private var selection = ""
 
+  /// Plain-English names + descriptions for the built-in ignored types so users
+  /// understand what each one skips. Unknown/custom types just show their id.
+  private static let known: [String: (name: String, desc: String)] = [
+    "Pasteboard generator type":
+      ("Auto-generated copies", "Text put on the clipboard by software automatically, not copied by you."),
+    "com.agilebits.onepassword":
+      ("1Password", "Anything copied from the 1Password app (passwords, logins)."),
+    "com.typeit4me.clipping":
+      ("TypeIt4Me", "Snippets expanded by the TypeIt4Me text-expander app."),
+    "de.petermaurer.TransientPasteboardType":
+      ("Transient clips", "Copies apps mark as temporary / “do not store”, like password fields."),
+    "net.antelle.keeweb":
+      ("KeeWeb", "Anything copied from the KeeWeb password manager.")
+  ]
+
   var body: some View {
     VStack(alignment: .leading) {
       List(selection: $selection) {
         ForEach(ignoredPasteboardTypes.sorted()) { type in
-          TextField("", text: Binding(
-            get: { type },
-            set: {
-              guard !$0.isEmpty, type != $0 else { return }
-              edit = $0
-            })
-          )
-          .onSubmit {
-            remove(type)
-            ignoredPasteboardTypes.insert(edit)
+          VStack(alignment: .leading, spacing: 2) {
+            if let info = Self.known[type] {
+              Text(info.name).font(.system(size: 12, weight: .semibold))
+              Text(info.desc).font(.system(size: 10)).foregroundStyle(.gray)
+              Text(type).font(.system(size: 9, design: .monospaced)).foregroundStyle(.secondary.opacity(0.6))
+            } else {
+              TextField("", text: Binding(
+                get: { type },
+                set: {
+                  guard !$0.isEmpty, type != $0 else { return }
+                  edit = $0
+                })
+              )
+              .onSubmit {
+                remove(type)
+                ignoredPasteboardTypes.insert(edit)
+              }
+              .focused($focus, equals: type)
+              Text("Custom type").font(.system(size: 10)).foregroundStyle(.gray)
+            }
           }
-          .focused($focus, equals: type)
+          .padding(.vertical, 2)
+          .tag(type)
         }
       }
       .onDeleteCommand {

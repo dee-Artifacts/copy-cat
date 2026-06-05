@@ -84,6 +84,68 @@ struct CustomDragState {
   var grabOffset: CGSize = .zero     // card center - startCursor (constant after init)
 }
 
+// MARK: - Expired hard-lock overlay (freezes the panel until a license is active)
+private struct ExpiredPanelOverlay: View {
+  private var green: Color { Color(hex: "57D559") ?? .green }
+  var body: some View {
+    ZStack {
+      Color.black.opacity(0.9).ignoresSafeArea()
+      VStack(spacing: 14) {
+        Image(systemName: "lock.fill").font(.system(size: 40)).foregroundStyle(green)
+        Text("Your free trial has ended").font(.system(size: 18, weight: .bold)).foregroundStyle(.white)
+        Text("Copy Cat is locked. Buy a license to keep using your clipboard, pinboards, and Quick Paste.")
+          .font(.system(size: 12)).foregroundStyle(.white.opacity(0.7))
+          .multilineTextAlignment(.center).frame(maxWidth: 340)
+        Button {
+          AppState.shared.openLicensePane()
+        } label: {
+          Text("Buy Copy Cat").font(.system(size: 14, weight: .semibold))
+            .foregroundStyle(.black)
+            .padding(.horizontal, 30).padding(.vertical, 11)
+            .background(green)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+      }
+      .padding(40)
+    }
+    .contentShape(Rectangle())
+    .onTapGesture { } // swallow taps so the cards behind stay frozen
+  }
+}
+
+// MARK: - License status pill (trial countdown / unlock prompt)
+private struct LicenseStatusPill: View {
+  let onTap: () -> Void
+  var body: some View {
+    let state = LicenseManager.shared.state
+    Group {
+      switch state {
+      case .licensed:
+        EmptyView()
+      case let .trial(daysLeft):
+        pill(text: "\(daysLeft)d • Trial", icon: "clock", tint: Color(hex: "57D559") ?? .green)
+      case .expired:
+        pill(text: "Unlock", icon: "lock.fill", tint: .orange)
+      }
+    }
+  }
+  private func pill(text: String, icon: String, tint: Color) -> some View {
+    Button(action: onTap) {
+      HStack(spacing: 4) {
+        Image(systemName: icon).font(.system(size: 9))
+        Text(text).font(.system(size: 10, weight: .semibold))
+      }
+      .foregroundStyle(tint)
+      .padding(.horizontal, 8).padding(.vertical, 4)
+      .background(tint.opacity(0.12))
+      .clipShape(Capsule())
+      .overlay(Capsule().stroke(tint.opacity(0.35), lineWidth: 1))
+    }
+    .buttonStyle(.plain)
+  }
+}
+
 // MARK: - CopyCatPanel
 struct CopyCatPanel: View {
   let appState = AppState.shared
@@ -93,6 +155,7 @@ struct CopyCatPanel: View {
     nonmutating set { appState.navigator.selectedPinboard = newValue }
   }
   @State private var searchText = ""
+  @FocusState private var searchFocused: Bool
   @State private var showNewPinboard = false
   @State private var dropTargetPinboard: PinboardModel? = nil
   @State private var isClipboardDropTarget = false
@@ -318,6 +381,12 @@ struct CopyCatPanel: View {
       Text("Are you sure you want to delete this pinboard? This action cannot be undone.")
     }
     .task { try? await appState.history.load() }
+    .onAppear { DispatchQueue.main.async { searchFocused = true } }
+    .overlay {
+      if LicenseManager.shared.state == .expired {
+        ExpiredPanelOverlay()
+      }
+    }
   }
 
   // MARK: - Toolbar (search + tab chips + export)
@@ -343,6 +412,7 @@ struct CopyCatPanel: View {
             .font(.system(size: 11))
             .foregroundStyle(Color(red: 0.90, green: 0.89, blue: 0.88))
             .tint(Color(hex: "57D559")!) // green caret
+            .focused($searchFocused)
           if !searchText.isEmpty {
             Button { searchText = "" } label: {
               Image(systemName: "xmark.circle.fill")
@@ -377,14 +447,28 @@ struct CopyCatPanel: View {
               withAnimation(.easeInOut(duration: 0.15)) { selectedPinboard = nil }
             }
             .background(tabChipGeometry("clipboard"))
-            ForEach(pinboardStore.pinboards) { pinboard in
+            ForEach(Array(pinboardStore.pinboards.enumerated()), id: \.element.id) { index, pinboard in
+              let pinboardLocked = !LicenseManager.shared.canAccessPinboard(at: index)
               TabChip(
                 label: pinboard.name,
                 color: pinboard.uiColor,
                 isSelected: selectedPinboard?.id == pinboard.id,
                 isDropTarget: dropTargetPinboard?.id == pinboard.id
               ) {
-                withAnimation(.easeInOut(duration: 0.15)) { selectedPinboard = pinboard }
+                if pinboardLocked {
+                  appState.openLicensePane()
+                } else {
+                  withAnimation(.easeInOut(duration: 0.15)) { selectedPinboard = pinboard }
+                }
+              }
+              .opacity(pinboardLocked ? 0.5 : 1)
+              .overlay(alignment: .topTrailing) {
+                if pinboardLocked {
+                  Image(systemName: "lock.fill")
+                    .font(.system(size: 8))
+                    .foregroundStyle(.secondary)
+                    .padding(2)
+                }
               }
               .background(tabChipGeometry(pinboard.id.uuidString))
               .contextMenu {
@@ -399,20 +483,52 @@ struct CopyCatPanel: View {
                 }
               }
             }
-            Button {
-              withAnimation(.spring(duration: 0.2)) { showNewPinboard = true }
-            } label: {
-              Image(systemName: "plus.circle.fill")
-                .font(.system(size: 15))
-                .foregroundStyle(Color(red: 0.90, green: 0.89, blue: 0.88)) // tertiary neutral
+            if !LicenseManager.shared.isLicensed,
+               pinboardStore.pinboards.count >= LicenseConfig.freePinboardLimit {
+              // Unlicensed users (trial or expired) get 2 free boards, then an upsell.
+              Button {
+                appState.openLicensePane()
+              } label: {
+                HStack(spacing: 4) {
+                  Image(systemName: "cart.fill").font(.system(size: 9))
+                  Text("For more Pinboard buy Copy Cat").font(.system(size: 10, weight: .semibold))
+                }
+                .foregroundStyle(Color(hex: "57D559") ?? .green)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background((Color(hex: "57D559") ?? .green).opacity(0.12))
+                .clipShape(Capsule())
+                .overlay(Capsule().stroke((Color(hex: "57D559") ?? .green).opacity(0.35), lineWidth: 1))
+              }
+              .buttonStyle(.plain)
+              .help("Unlock unlimited pinboards")
+            } else {
+              Button {
+                withAnimation(.spring(duration: 0.2)) { showNewPinboard = true }
+              } label: {
+                Image(systemName: "plus.circle.fill")
+                  .font(.system(size: 15))
+                  .foregroundStyle(Color(red: 0.90, green: 0.89, blue: 0.88)) // tertiary neutral
+              }
+              .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
           }
           .padding(.vertical, 4)
         }
       }
 
       Spacer(minLength: 0)
+
+      LicenseStatusPill { appState.openLicensePane() }
+        .padding(.leading, 8)
+
+      Button { appState.openPreferences() } label: {
+        Image(systemName: "gearshape.fill")
+          .font(.system(size: 14))
+          .foregroundStyle(Color(red: 0.90, green: 0.89, blue: 0.88))
+      }
+      .buttonStyle(.plain)
+      .help("Open Settings")
+      .padding(.leading, 8)
     }
     .padding(.horizontal, 16)
   }

@@ -140,7 +140,7 @@ class AppState: Sendable {
   }
 
   @MainActor
-  func openPreferences() { // swiftlint:disable:this function_body_length
+  private func ensureSettingsController() { // swiftlint:disable:this function_body_length
     if settingsWindowController == nil {
       settingsWindowController = SettingsWindowController(
         panes: [
@@ -149,50 +149,72 @@ class AppState: Sendable {
             title: NSLocalizedString("Title", tableName: "GeneralSettings", comment: ""),
             toolbarIcon: NSImage.gearshape!
           ) {
-            GeneralSettingsPane()
+            LicenseGatedPane { GeneralSettingsPane() }.settingsPaneSize()
           },
           Settings.Pane(
             identifier: Settings.PaneIdentifier.storage,
             title: NSLocalizedString("Title", tableName: "StorageSettings", comment: ""),
             toolbarIcon: NSImage.externaldrive!
           ) {
-            StorageSettingsPane()
+            LicenseGatedPane { StorageSettingsPane() }.settingsPaneSize()
           },
           Settings.Pane(
-            identifier: Settings.PaneIdentifier.appearance,
-            title: NSLocalizedString("Title", tableName: "AppearanceSettings", comment: ""),
-            toolbarIcon: NSImage.paintpalette!
+            identifier: Settings.PaneIdentifier.shortcuts,
+            title: "Shortcuts",
+            toolbarIcon: NSImage(systemSymbolName: "keyboard", accessibilityDescription: "Shortcuts")!
           ) {
-            AppearanceSettingsPane()
-          },
-          Settings.Pane(
-            identifier: Settings.PaneIdentifier.pins,
-            title: NSLocalizedString("Title", tableName: "PinsSettings", comment: ""),
-            toolbarIcon: NSImage.pincircle!
-          ) {
-            PinsSettingsPane()
-              .environment(self)
-              .modelContainer(Storage.shared.container)
+            LicenseGatedPane { ShortcutsSettingsPane() }.settingsPaneSize()
           },
           Settings.Pane(
             identifier: Settings.PaneIdentifier.ignore,
             title: NSLocalizedString("Title", tableName: "IgnoreSettings", comment: ""),
             toolbarIcon: NSImage.nosign!
           ) {
-            IgnoreSettingsPane()
+            LicenseGatedPane { IgnoreSettingsPane() }.settingsPaneSize()
+          },
+          Settings.Pane(
+            identifier: Settings.PaneIdentifier.license,
+            title: "License",
+            toolbarIcon: NSImage(systemSymbolName: "key.fill", accessibilityDescription: "License")!
+          ) {
+            LicenseSettingsPane().settingsPaneSize()
           },
           Settings.Pane(
             identifier: Settings.PaneIdentifier.advanced,
             title: NSLocalizedString("Title", tableName: "AdvancedSettings", comment: ""),
             toolbarIcon: NSImage.gearshape2!
           ) {
-            AdvancedSettingsPane()
+            LicenseGatedPane { AdvancedSettingsPane() }.settingsPaneSize()
           }
         ]
       )
     }
-    settingsWindowController?.show()
+  }
+
+  // Each entry point uses a SINGLE `show(pane:)` call — calling `show()` and then
+  // `show(pane:)` separately leaves the destination pane blank.
+  @MainActor
+  func openPreferences() {
+    ensureSettingsController()
+    settingsWindowController?.show(pane: .general)
+    settingsWindowController?.window?.styleMask.insert(.resizable) // green expand button
     settingsWindowController?.window?.orderFrontRegardless()
+    // Re-select on the next runloop so the pane's content lays out (the library
+    // otherwise renders the first-opened pane blank until you switch tabs).
+    DispatchQueue.main.async { [weak self] in
+      self?.settingsWindowController?.show(pane: .general)
+    }
+  }
+
+  @MainActor
+  func openLicensePane() {
+    ensureSettingsController()
+    settingsWindowController?.show(pane: .license)
+    settingsWindowController?.window?.styleMask.insert(.resizable)
+    settingsWindowController?.window?.orderFrontRegardless()
+    DispatchQueue.main.async { [weak self] in
+      self?.settingsWindowController?.show(pane: .license)
+    }
   }
 
   func quit() {

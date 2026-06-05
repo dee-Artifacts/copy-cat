@@ -188,6 +188,12 @@ class Clipboard {
 
     changeCount = pasteboard.changeCount
 
+    // Trial expired → Copy Cat is locked; stop recording new copies until a
+    // license is activated.
+    if LicenseManager.isExpiredFlag {
+      return
+    }
+
     if pasteboard.pasteboardItems?.contains(where: { $0.types.contains(.fromMaccy) }) != true {
       // External copy occurred. Stop the current paste stack.
       // Maybe queue it into the paste stack? Configurable behaviour?

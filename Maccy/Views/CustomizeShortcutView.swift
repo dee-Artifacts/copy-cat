@@ -34,6 +34,72 @@ struct ShortcutRow: View {
   }
 }
 
+// MARK: - Shortcuts settings tab
+
+/// The full shortcut list, hosted as a dedicated Settings pane.
+struct ShortcutsSettingsPane: View {
+  var body: some View {
+    ZStack {
+      LinearGradient(
+        colors: [Color(red: 0.12, green: 0.12, blue: 0.18), Color(red: 0.06, green: 0.06, blue: 0.09)],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+      )
+      ScrollView {
+        VStack(spacing: 2) {
+          ShortcutRow(label: "Quick Access - Move Left",
+                      desc: "Hold modifier and press to move left (default ⌥A)",
+                      shortcutName: .quickAccessLeft, defaultShortcutText: "⌥A",
+                      onReset: { KeyboardShortcuts.reset(.quickAccessLeft) })
+          Divider().background(.white.opacity(0.08))
+          ShortcutRow(label: "Quick Access - Move Right",
+                      desc: "Hold modifier and press to move right (default ⌥D)",
+                      shortcutName: .quickAccessRight, defaultShortcutText: "⌥D",
+                      onReset: { KeyboardShortcuts.reset(.quickAccessRight) })
+          Divider().background(.white.opacity(0.08))
+          ShortcutRow(label: "Quick Access - Cycle Tabs",
+                      desc: "Hold modifier and press to cycle pinboards (default ⌥W)",
+                      shortcutName: .quickAccessCycle, defaultShortcutText: "⌥W",
+                      onReset: { KeyboardShortcuts.reset(.quickAccessCycle) })
+          Divider().background(.white.opacity(0.08))
+          ShortcutRow(label: "Open Paste History",
+                      desc: "Launches the Paste tray from bottom of screen",
+                      shortcutName: .popup, defaultShortcutText: "⇧⌘C",
+                      onReset: { KeyboardShortcuts.reset(.popup); AppState.shared.popup.initEventsMonitor() })
+          Divider().background(.white.opacity(0.08))
+          ShortcutRow(label: "Activate Paste Stack",
+                      desc: "Start a Paste Stack with selected items",
+                      shortcutName: .activatePasteStack, defaultShortcutText: "⌘V",
+                      onReset: { KeyboardShortcuts.reset(.activatePasteStack) })
+          Divider().background(.white.opacity(0.08))
+          ShortcutRow(label: "Paste as Plain Text",
+                      desc: "Pastes last item stripped of formatting",
+                      shortcutName: .pastePlainText, defaultShortcutText: "⌥⌘V",
+                      onReset: { KeyboardShortcuts.reset(.pastePlainText) })
+          Divider().background(.white.opacity(0.08))
+          ShortcutRow(label: "Search History",
+                      desc: "Focuses the search bar in active Paste tray",
+                      shortcutName: .search, defaultShortcutText: "⌘F",
+                      onReset: { KeyboardShortcuts.reset(.search) })
+          Divider().background(.white.opacity(0.08))
+          ShortcutRow(label: "Pin / Unpin Item",
+                      desc: "Saves selected items to active Pinboards",
+                      shortcutName: .pin, defaultShortcutText: "⌘L",
+                      onReset: { KeyboardShortcuts.reset(.pin) })
+          Divider().background(.white.opacity(0.08))
+          ShortcutRow(label: "Delete Item",
+                      desc: "Deletes selected items from history",
+                      shortcutName: .delete, defaultShortcutText: "⌘⌫",
+                      onReset: { KeyboardShortcuts.reset(.delete) })
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+      }
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+}
+
 struct CustomizeShortcutView: View {
   var onDismiss: () -> Void
 

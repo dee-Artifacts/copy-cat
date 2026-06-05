@@ -38,6 +38,7 @@
 		CC00C0020000000000000001 /* OGFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00C0010000000000000001 /* OGFetcher.swift */; };
 		CC00J0020000000000000001 /* OGImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00J0010000000000000001 /* OGImageCache.swift */; };
 		CC00K0020000000000000001 /* CommandVMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00K0010000000000000001 /* CommandVMonitor.swift */; };
+		CC00L0020000000000000001 /* Licensing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00L0010000000000000001 /* Licensing.swift */; };
 		CC00J0040000000000000001 /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00J0030000000000000001 /* ExportManager.swift */; };
 		CC00D0020000000000000001 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00D0010000000000000001 /* Color+Hex.swift */; };
 		CC00E0020000000000000001 /* PinboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00E0010000000000000001 /* PinboardStore.swift */; };
@@ -94,6 +95,7 @@
 		DA3EAE0C2AE30F7500F39108 /* NSApplication+Windows.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3EAE0B2AE30F7500F39108 /* NSApplication+Windows.swift */; };
 		DA3F1B452C90084600267632 /* Sauce+KeyboardShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA3F1B442C90083800267632 /* Sauce+KeyboardShortcuts.swift */; };
 		DA44C5E42C1C858400819834 /* StorageSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA44C5E32C1C858400819834 /* StorageSettingsPane.swift */; };
+		CC00M0020000000000000001 /* LicenseSettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00M0010000000000000001 /* LicenseSettingsPane.swift */; };
 		DA48AE892A5F0548006D4894 /* guy.jpeg in Resources */ = {isa = PBXBuildFile; fileRef = DA48AE882A5F0548006D4894 /* guy.jpeg */; };
 		DA49EE7528B59468002752E0 /* NSRect+Centered.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA49EE7428B59468002752E0 /* NSRect+Centered.swift */; };
 		DA49EE7928B594DC002752E0 /* NSRunningApplication+WindowFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA49EE7828B594DC002752E0 /* NSRunningApplication+WindowFrame.swift */; };
@@ -222,6 +224,7 @@
 		CC00C0010000000000000001 /* OGFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OGFetcher.swift; sourceTree = "<group>"; };
 		CC00J0010000000000000001 /* OGImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OGImageCache.swift; sourceTree = "<group>"; };
 		CC00K0010000000000000001 /* CommandVMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandVMonitor.swift; sourceTree = "<group>"; };
+		CC00L0010000000000000001 /* Licensing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Licensing.swift; sourceTree = "<group>"; };
 		CC00J0030000000000000001 /* ExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportManager.swift; sourceTree = "<group>"; };
 		CC00D0010000000000000001 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		CC00E0010000000000000001 /* PinboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinboardStore.swift; sourceTree = "<group>"; };
@@ -326,6 +329,7 @@
 		DA3EAE0B2AE30F7500F39108 /* NSApplication+Windows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSApplication+Windows.swift"; sourceTree = "<group>"; };
 		DA3F1B442C90083800267632 /* Sauce+KeyboardShortcuts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Sauce+KeyboardShortcuts.swift"; sourceTree = "<group>"; };
 		DA44C5E32C1C858400819834 /* StorageSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StorageSettingsPane.swift; sourceTree = "<group>"; };
+		CC00M0010000000000000001 /* LicenseSettingsPane.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseSettingsPane.swift; sourceTree = "<group>"; };
 		DA4566C22CB0320200059A82 /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pl; path = pl.lproj/AdvancedSettings.strings; sourceTree = "<group>"; };
 		DA4566C32CB0320200059A82 /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pl; path = pl.lproj/AppearanceSettings.strings; sourceTree = "<group>"; };
 		DA4566C42CB0320200059A82 /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = pl; path = pl.lproj/GeneralSettings.strings; sourceTree = "<group>"; };
@@ -688,6 +692,7 @@
 				DA9C3C442C207AF80056795D /* IgnoreSettingsPane.swift */,
 				DA9C3C482C20D4B40056795D /* IgnoreSettings.strings */,
 				DA44C5E32C1C858400819834 /* StorageSettingsPane.swift */,
+				CC00M0010000000000000001 /* LicenseSettingsPane.swift */,
 				DA689FAE2C1CD3B00009B887 /* StorageSettings.strings */,
 				DAA365CD2C4BF9DD00A394F8 /* PinsSettingsPane.swift */,
 				DAA365CF2C4C147400A394F8 /* PinsSettings.strings */,
@@ -769,6 +774,7 @@
 				CC00C0010000000000000001 /* OGFetcher.swift */,
 				CC00J0010000000000000001 /* OGImageCache.swift */,
 				CC00K0010000000000000001 /* CommandVMonitor.swift */,
+				CC00L0010000000000000001 /* Licensing.swift */,
 				CC00J0030000000000000001 /* ExportManager.swift */,
 			);
 			path = Services;
@@ -1126,6 +1132,7 @@
 				CC00C0020000000000000001 /* OGFetcher.swift in Sources */,
 				CC00J0020000000000000001 /* OGImageCache.swift in Sources */,
 				CC00K0020000000000000001 /* CommandVMonitor.swift in Sources */,
+				CC00L0020000000000000001 /* Licensing.swift in Sources */,
 				CC00J0040000000000000001 /* ExportManager.swift in Sources */,
 				CC00D0020000000000000001 /* Color+Hex.swift in Sources */,
 				CC00E0020000000000000001 /* PinboardStore.swift in Sources */,
@@ -1188,6 +1195,7 @@
 				DA19691A2C3F369800258481 /* HeaderView.swift in Sources */,
 				DA555F082CF0F994009608BD /* ApplicationImageCache.swift in Sources */,
 				DA44C5E42C1C858400819834 /* StorageSettingsPane.swift in Sources */,
+				CC00M0020000000000000001 /* LicenseSettingsPane.swift in Sources */,
 				DA05B5142C234DCF006980FE /* HistoryItemContent.swift in Sources */,
 				DAA072D32C40A961006DDFD2 /* Color+Random.swift in Sources */,
 				DA05B5152C234DCF006980FE /* HistoryItem.swift in Sources */,

@@ -32,36 +32,6 @@ struct GeneralSettingsPane: View {
         )
       }
 
-      Settings.Section(label: { Text("Open", tableName: "GeneralSettings") }) {
-        KeyboardShortcuts.Recorder(for: .popup, onChange: { newShortcut in
-          if newShortcut == nil {
-            // No shortcut is recorded. Remove keys monitor
-            AppState.shared.popup.deinitEventsMonitor()
-          } else {
-            // User is using shortcut. Ensure keys monitor is initialized
-            AppState.shared.popup.initEventsMonitor()
-          }
-        })
-          .help(Text("OpenTooltip", tableName: "GeneralSettings"))
-      }
-
-      Settings.Section(label: { Text("Pin", tableName: "GeneralSettings") }) {
-        KeyboardShortcuts.Recorder(for: .pin)
-          .help(Text("PinTooltip", tableName: "GeneralSettings"))
-      }
-      Settings.Section(label: { Text("Delete", tableName: "GeneralSettings") }
-      ) {
-        KeyboardShortcuts.Recorder(for: .delete)
-          .help(Text("DeleteTooltip", tableName: "GeneralSettings"))
-      }
-      Settings.Section(
-        bottomDivider: true,
-        label: { Text("ShowPreview", tableName: "GeneralSettings") }
-      ) {
-        KeyboardShortcuts.Recorder(for: .togglePreview)
-          .help(Text("ShowPreviewTooltip", tableName: "GeneralSettings"))
-      }
-
       Settings.Section(
         bottomDivider: true,
         label: { Text("Search", tableName: "GeneralSettings") }
@@ -100,7 +70,7 @@ struct GeneralSettingsPane: View {
         .controlSize(.small)
       }
 
-      Settings.Section(title: "") {
+      Settings.Section(label: { Text("Notifications", tableName: "GeneralSettings") }) {
         if let notificationsURL = notificationsURL {
           Link(destination: notificationsURL, label: {
             Text("NotificationsAndSounds", tableName: "GeneralSettings")
