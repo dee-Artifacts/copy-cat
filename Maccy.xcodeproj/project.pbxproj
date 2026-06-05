@@ -37,12 +37,14 @@
 		CC00B0020000000000000001 /* ClipCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00B0010000000000000001 /* ClipCard.swift */; };
 		CC00C0020000000000000001 /* OGFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00C0010000000000000001 /* OGFetcher.swift */; };
 		CC00J0020000000000000001 /* OGImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00J0010000000000000001 /* OGImageCache.swift */; };
+		CC00K0020000000000000001 /* CommandVMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00K0010000000000000001 /* CommandVMonitor.swift */; };
 		CC00J0040000000000000001 /* ExportManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00J0030000000000000001 /* ExportManager.swift */; };
 		CC00D0020000000000000001 /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00D0010000000000000001 /* Color+Hex.swift */; };
 		CC00E0020000000000000001 /* PinboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00E0010000000000000001 /* PinboardStore.swift */; };
 		CC00F0020000000000000001 /* PinboardEntryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00F0010000000000000001 /* PinboardEntryCard.swift */; };
 		CC00G0020000000000000001 /* NewPinboardSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00G0010000000000000001 /* NewPinboardSheet.swift */; };
 		CC00H0020000000000000001 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00H0010000000000000001 /* OnboardingView.swift */; };
+		CC00H0020000000000000002 /* CustomizeShortcutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00H0010000000000000002 /* CustomizeShortcutView.swift */; };
 		CC00I0020000000000000001 /* ClipItemTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC00I0010000000000000001 /* ClipItemTransfer.swift */; };
 		4762D6972467226100B3A2BA /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 4762D6992467226100B3A2BA /* Localizable.strings */; };
 		DA009931256411F90030E697 /* appcast.xml in Resources */ = {isa = PBXBuildFile; fileRef = DA00992C256411F90030E697 /* appcast.xml */; };
@@ -219,12 +221,14 @@
 		CC00B0010000000000000001 /* ClipCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipCard.swift; sourceTree = "<group>"; };
 		CC00C0010000000000000001 /* OGFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OGFetcher.swift; sourceTree = "<group>"; };
 		CC00J0010000000000000001 /* OGImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OGImageCache.swift; sourceTree = "<group>"; };
+		CC00K0010000000000000001 /* CommandVMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandVMonitor.swift; sourceTree = "<group>"; };
 		CC00J0030000000000000001 /* ExportManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportManager.swift; sourceTree = "<group>"; };
 		CC00D0010000000000000001 /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 		CC00E0010000000000000001 /* PinboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinboardStore.swift; sourceTree = "<group>"; };
 		CC00F0010000000000000001 /* PinboardEntryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinboardEntryCard.swift; sourceTree = "<group>"; };
 		CC00G0010000000000000001 /* NewPinboardSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewPinboardSheet.swift; sourceTree = "<group>"; };
 		CC00H0010000000000000001 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		CC00H0010000000000000002 /* CustomizeShortcutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomizeShortcutView.swift; sourceTree = "<group>"; };
 		CC00I0010000000000000001 /* ClipItemTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipItemTransfer.swift; sourceTree = "<group>"; };
 		2FFF8BCF2CE2116600235A78 /* Data+Encoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Data+Encoding.swift"; sourceTree = "<group>"; };
 		3EBDD1E32BBEF22800C57500 /* nl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = nl; path = nl.lproj/Localizable.strings; sourceTree = "<group>"; };
@@ -701,6 +705,7 @@
 				CC00F0010000000000000001 /* PinboardEntryCard.swift */,
 				CC00G0010000000000000001 /* NewPinboardSheet.swift */,
 				CC00H0010000000000000001 /* OnboardingView.swift */,
+				CC00H0010000000000000002 /* CustomizeShortcutView.swift */,
 				DAA072DE2C41C63C006DDFD2 /* ConfirmationView.swift */,
 				DA243D112C2F64820012A27F /* ContentView.swift */,
 				DAA072DC2C41C61F006DDFD2 /* FooterItemView.swift */,
@@ -763,6 +768,7 @@
 			children = (
 				CC00C0010000000000000001 /* OGFetcher.swift */,
 				CC00J0010000000000000001 /* OGImageCache.swift */,
+				CC00K0010000000000000001 /* CommandVMonitor.swift */,
 				CC00J0030000000000000001 /* ExportManager.swift */,
 			);
 			path = Services;
@@ -1119,6 +1125,7 @@
 				CC00B0020000000000000001 /* ClipCard.swift in Sources */,
 				CC00C0020000000000000001 /* OGFetcher.swift in Sources */,
 				CC00J0020000000000000001 /* OGImageCache.swift in Sources */,
+				CC00K0020000000000000001 /* CommandVMonitor.swift in Sources */,
 				CC00J0040000000000000001 /* ExportManager.swift in Sources */,
 				CC00D0020000000000000001 /* Color+Hex.swift in Sources */,
 				CC00E0020000000000000001 /* PinboardStore.swift in Sources */,
@@ -1126,6 +1133,7 @@
 				CC00F0020000000000000001 /* PinboardEntryCard.swift in Sources */,
 				CC00G0020000000000000001 /* NewPinboardSheet.swift in Sources */,
 				CC00H0020000000000000001 /* OnboardingView.swift in Sources */,
+				CC00H0020000000000000002 /* CustomizeShortcutView.swift in Sources */,
 				DAA072D52C40AC52006DDFD2 /* HistoryListView.swift in Sources */,
 				2F578C422EFFE8920088B759 /* SlideoutContentView.swift in Sources */,
 				2F578C432EFFE8920088B759 /* SlideoutView.swift in Sources */,

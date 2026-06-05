@@ -42,6 +42,7 @@ enum ClipCardType {
 
 struct ClipCard: View {
   let decorator: HistoryItemDecorator
+  var isQuickHighlighted: Bool = false
   @State private var ogMeta: OGMetadata? = nil
   @State private var ogImage: NSImage? = nil
   @State private var fetchTask: Task<Void, Never>? = nil
@@ -187,10 +188,12 @@ struct ClipCard: View {
     .overlay(
       RoundedRectangle(cornerRadius: 12)
         .stroke(
-          isHovered
-            ? Color(red: 0.94, green: 0.34, blue: 0.15) // branding orange on hover
-            : Color(red: 0.21, green: 0.21, blue: 0.20),
-          lineWidth: isHovered ? 1.5 : 1
+          isQuickHighlighted
+            ? Color(hex: "57D559")!
+            : ((isHovered && AppState.shared.navigator.activeQuickHighlightID == nil)
+                ? Color(hex: "57D559")! // branding green light on hover
+                : Color(red: 0.21, green: 0.21, blue: 0.20)),
+          lineWidth: isQuickHighlighted ? 2.5 : ((isHovered && AppState.shared.navigator.activeQuickHighlightID == nil) ? 1.5 : 1)
         )
     )
     .overlay(alignment: .topTrailing) {
@@ -203,7 +206,7 @@ struct ClipCard: View {
             .font(.system(size: 11, weight: .semibold))
             .foregroundStyle(.white)
             .frame(width: 26, height: 26)
-            .background(decorator.isPinned ? Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.9) : Color.black.opacity(0.4))
+            .background(decorator.isPinned ? Color(hex: "024E50")!.opacity(0.9) : Color.black.opacity(0.4))
             .clipShape(Circle())
         }
         .buttonStyle(.plain)

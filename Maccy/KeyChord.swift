@@ -20,6 +20,12 @@ enum KeyChord: CaseIterable {
   static var previewKey: Key? { Sauce.shared.key(shortcut: .togglePreview) }
   static var previewModifiers: NSEvent.ModifierFlags? { KeyboardShortcuts.Shortcut(name: .togglePreview)?.modifiers }
 
+  static var activatePasteStackKey: Key? { Sauce.shared.key(shortcut: .activatePasteStack) }
+  static var activatePasteStackModifiers: NSEvent.ModifierFlags? { KeyboardShortcuts.Shortcut(name: .activatePasteStack)?.modifiers }
+
+  static var searchKey: Key? { Sauce.shared.key(shortcut: .search) }
+  static var searchModifiers: NSEvent.ModifierFlags? { KeyboardShortcuts.Shortcut(name: .search)?.modifiers }
+
   case clearHistory
   case clearHistoryAll
   case clearSearch
@@ -37,6 +43,8 @@ enum KeyChord: CaseIterable {
   case extendToFirst
   case openPreferences
   case pinOrUnpin
+  case activatePasteStack
+  case search
   case selectCurrentItem
   case close
   case togglePreview
@@ -112,6 +120,10 @@ enum KeyChord: CaseIterable {
          (.p, [.control, .option]),
          (.pageUp, []):
       self = .moveToFirst
+    case (KeyChord.activatePasteStackKey, KeyChord.activatePasteStackModifiers):
+      self = .activatePasteStack
+    case (KeyChord.searchKey, KeyChord.searchModifiers):
+      self = .search
     case (KeyChord.pinKey, KeyChord.pinModifiers):
       self = .pinOrUnpin
     case (.comma, [.command]):

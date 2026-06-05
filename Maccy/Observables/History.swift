@@ -35,14 +35,10 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
     }
   }
 
-  var pressedShortcutItem: HistoryItemDecorator? {
-    guard let event = NSApp.currentEvent else {
-      return nil
-    }
-
+  func pressedShortcutItem(for event: NSEvent) -> HistoryItemDecorator? {
     let modifierFlags = event.modifierFlags
       .intersection(.deviceIndependentFlagsMask)
-      .subtracting(.capsLock)
+      .subtracting([.capsLock, .numericPad, .function])
 
     guard HistoryItemAction(modifierFlags) != .unknown else {
       return nil
@@ -50,6 +46,13 @@ class History: ItemsContainer { // swiftlint:disable:this type_body_length
 
     let key = Sauce.shared.key(for: Int(event.keyCode))
     return items.first { $0.shortcuts.contains(where: { $0.key == key }) }
+  }
+
+  var pressedShortcutItem: HistoryItemDecorator? {
+    guard let event = NSApp.currentEvent else {
+      return nil
+    }
+    return pressedShortcutItem(for: event)
   }
 
   private let search = Search()

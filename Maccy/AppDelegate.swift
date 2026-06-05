@@ -4,13 +4,27 @@ import Sparkle
 import SwiftUI
 import UniformTypeIdentifiers
 
+class KeyPanel: NSPanel {
+  override var canBecomeKey: Bool { true }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
   var panel: FloatingPanel<CopyCatPanel>!
   private var onboardingPanel: NSPanel?
   private var excludeAppsPanel: NSPanel?
+  private var customizeShortcutPanel: KeyPanel?
   private weak var historyLimitField: NSTextField?
   private weak var historyLimitSaveBtn: NSButton?
   private var isShowingMinError = false
+  private var brandColor: NSColor {
+    NSColor(name: nil) { appearance in
+      if appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua {
+        return NSColor(red: 0.341, green: 0.835, blue: 0.349, alpha: 1.0) // #57D559
+      } else {
+        return NSColor(red: 0.008, green: 0.306, blue: 0.314, alpha: 1.0) // #024E50
+      }
+    }
+  }
 
   @objc
   private lazy var statusItem: NSStatusItem = {
@@ -106,6 +120,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     ) {
       CopyCatPanel()
     }
+
+    CommandVMonitor.shared.start()
+
+    KeyboardShortcuts.onKeyDown(for: .pastePlainText) {
+      Task { @MainActor in
+        if let firstDec = AppState.shared.history.items.first {
+          Clipboard.shared.copy(firstDec.item, removeFormatting: true)
+          Clipboard.shared.paste()
+        }
+      }
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+      if !Defaults[.hasShownOnboarding] {
+        self?.showOnboarding()
+        Defaults[.hasShownOnboarding] = true
+      }
+    }
   }
 
   func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -114,6 +146,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
   }
 
   func applicationWillTerminate(_ notification: Notification) {
+    CommandVMonitor.shared.stop()
     if Defaults[.clearOnQuit] {
       AppState.shared.history.clear()
     }
@@ -171,6 +204,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     menu.addItem(limitItem)
     menu.addItem(.separator())
 
+    let clearHistoryItem = NSMenuItem(title: "Clear History...", action: #selector(clearHistory), keyEquivalent: "")
+    clearHistoryItem.target = self
+    menu.addItem(clearHistoryItem)
+    menu.addItem(.separator())
+
     let exportCSVItem = NSMenuItem(title: "Export CSV (.zip)...", action: #selector(exportCSV), keyEquivalent: "")
     exportCSVItem.target = self
     menu.addItem(exportCSVItem)
@@ -182,6 +220,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     let excludeAppsItem = NSMenuItem(title: "Excluded Apps...", action: #selector(openExcludeApps), keyEquivalent: "")
     excludeAppsItem.target = self
     menu.addItem(excludeAppsItem)
+
+    let customizeShortcutItem = NSMenuItem(title: "Customize Shortcut...", action: #selector(openCustomizeShortcut), keyEquivalent: "")
+    customizeShortcutItem.target = self
+    menu.addItem(customizeShortcutItem)
     menu.addItem(.separator())
 
     let helpItem = NSMenuItem(title: "How to Use Copy Cat", action: #selector(showOnboarding), keyEquivalent: "")
@@ -209,7 +251,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
   @objc private func uninstallApp() {
     let alert = NSAlert()
     alert.messageText = "Uninstall Copy Cat"
-    alert.informativeText = "This will completely erase your clipboard history, pinboards, settings, and accessibility permissions.\n\nAfter clicking Uninstall, the app will quit. You can then safely drag it to the Trash."
+    alert.informativeText = "This will completely erase your clipboard history, pinboards, settings, and accessibility permissions, and delete the application."
     alert.addButton(withTitle: "Cancel")
     let uninstallButton = alert.addButton(withTitle: "Uninstall & Quit")
     uninstallButton.hasDestructiveAction = true
@@ -228,13 +270,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
       
       Task { @MainActor in
         AppState.shared.history.clear()
-        NSApp.terminate(nil)
+        
+        let bundlePath = Bundle.main.bundlePath
+        let shellScript = "sleep 0.5 && rm -rf '\(bundlePath)'"
+        let process = Process()
+        process.launchPath = "/bin/bash"
+        process.arguments = ["-c", shellScript]
+        try? process.run()
+        exit(0)
       }
     }
   }
 
   @objc private func checkAccessibility() {
-    Accessibility.check()
+    Accessibility.check(showSuccessAlert: true)
   }
 
   @objc private func openPanel() {
@@ -264,8 +313,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
           field.tag == 42,
           let btn = historyLimitSaveBtn else { return }
     let isDirty = field.integerValue != Defaults[.size]
-    let orange = NSColor(red: 0.94, green: 0.34, blue: 0.15, alpha: 1.0)
-    applySaveBtnStyle(btn, title: "Save", color: isDirty ? orange : .secondaryLabelColor)
+    applySaveBtnStyle(btn, title: "Save", color: isDirty ? brandColor : .secondaryLabelColor)
   }
 
   private func applySaveBtnStyle(_ btn: NSButton, title: String, color: NSColor) {
@@ -328,10 +376,62 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     excludeAppsPanel?.makeKeyAndOrderFront(nil)
   }
 
+  @objc @MainActor private func clearHistory() {
+    if Defaults[.suppressClearAlert] {
+      AppState.shared.history.clear()
+      return
+    }
+
+    let alert = NSAlert()
+    alert.messageText = "Clear Unpinned History"
+    alert.informativeText = "Are you sure you want to clear all unpinned items from your clipboard history? Pinned items will remain."
+    alert.addButton(withTitle: "Cancel")
+    let confirmButton = alert.addButton(withTitle: "Clear")
+    confirmButton.hasDestructiveAction = true
+
+    NSApp.activate(ignoringOtherApps: true)
+    if alert.runModal() == .alertSecondButtonReturn {
+      AppState.shared.history.clear()
+    }
+  }
+
+  @objc private func openCustomizeShortcut() {
+    if customizeShortcutPanel == nil {
+      let p = KeyPanel(
+        contentRect: NSRect(x: 0, y: 0, width: 520, height: 480),
+        styleMask: [.titled, .closable, .fullSizeContentView],
+        backing: .buffered,
+        defer: false
+      )
+      p.titleVisibility = .hidden
+      p.titlebarAppearsTransparent = true
+      p.isMovableByWindowBackground = true
+      p.standardWindowButton(.closeButton)?.isHidden = true
+      p.standardWindowButton(.miniaturizeButton)?.isHidden = true
+      p.standardWindowButton(.zoomButton)?.isHidden = true
+      p.backgroundColor = .clear
+      p.isReleasedWhenClosed = false
+      p.level = .floating
+
+      let hosting = NSHostingView(rootView: CustomizeShortcutView { [weak self] in
+        self?.customizeShortcutPanel?.close()
+        self?.customizeShortcutPanel = nil
+      })
+      hosting.wantsLayer = true
+      p.contentView = hosting
+      p.contentView?.layer?.cornerRadius = 16
+      p.contentView?.layer?.masksToBounds = true
+      customizeShortcutPanel = p
+    }
+    customizeShortcutPanel?.center()
+    NSApp.activate(ignoringOtherApps: true)
+    customizeShortcutPanel?.makeKeyAndOrderFront(nil)
+  }
+
   @objc private func showOnboarding() {
     if onboardingPanel == nil {
       let p = NSPanel(
-        contentRect: NSRect(x: 0, y: 0, width: 440, height: 360),
+        contentRect: NSRect(x: 0, y: 0, width: 440, height: 470),
         styleMask: [.titled, .closable, .fullSizeContentView],
         backing: .buffered,
         defer: false
@@ -346,6 +446,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
       let hosting = NSHostingView(rootView: OnboardingView { [weak self] in
         self?.onboardingPanel?.close()
         self?.onboardingPanel = nil
+        NSApp.setActivationPolicy(.accessory)
       })
       hosting.wantsLayer = true
       p.contentView = hosting
@@ -353,9 +454,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
       p.contentView?.layer?.masksToBounds = true
       onboardingPanel = p
     }
-    onboardingPanel?.center()
-    NSApp.activate(ignoringOtherApps: true)
-    onboardingPanel?.makeKeyAndOrderFront(nil)
+    NSApp.setActivationPolicy(.regular)
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self, let panel = self.onboardingPanel else { return }
+      panel.center()
+      panel.orderFrontRegardless()
+      NSApp.activate(ignoringOtherApps: true)
+      panel.makeKeyAndOrderFront(nil)
+    }
   }
 
   private func makeHistoryLimitView() -> NSView {
@@ -398,18 +504,17 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
   @objc private func saveHistoryLimitButtonTapped(_ sender: NSButton) {
     guard let field = sender.superview?.viewWithTag(42) as? NSTextField else { return }
-    let orange = NSColor(red: 0.94, green: 0.34, blue: 0.15, alpha: 1.0)
     let value = field.integerValue
 
     guard value >= 10 else {
       field.integerValue = Defaults[.size]
-      applySaveBtnStyle(sender, title: "Minimum 10", color: orange)
+      applySaveBtnStyle(sender, title: "Minimum 10", color: brandColor)
       sender.isEnabled = false
       isShowingMinError = true
       return
     }
 
-    applySaveBtnStyle(sender, title: "Saving...", color: orange)
+    applySaveBtnStyle(sender, title: "Saving...", color: brandColor)
     sender.isEnabled = false
     setHistoryLimitFromField(field)
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
@@ -434,7 +539,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
   }
 
   private func disableUnusedGlobalHotkeys() {
-    let names: [KeyboardShortcuts.Name] = [.delete, .pin]
+    let names: [KeyboardShortcuts.Name] = [.delete, .pin, .activatePasteStack, .search]
     KeyboardShortcuts.disable(names)
 
     NotificationCenter.default.addObserver(

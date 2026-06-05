@@ -47,6 +47,7 @@ class Popup {
   private var eventsMonitor: Any?
 
   private var state: PopupState = .toggle
+  private var openedAt: Date?
 
   init() {
     KeyboardShortcuts.onKeyDown(for: .popup, action: handleFirstKeyDown)
@@ -73,11 +74,29 @@ class Popup {
   }
 
   func open(height: CGFloat, at popupPosition: PopupPosition = Defaults[.popupPosition]) {
+    openedAt = Date()
     AppState.shared.appDelegate?.panel.open(height: height, at: popupPosition)
+
+    // Check if modifiers are released shortly after opening to avoid race conditions.
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+      self?.checkModifiersReleased()
+    }
+  }
+
+  private func checkModifiersReleased() {
+    guard let shortcut = KeyboardShortcuts.Name.popup.shortcut else {
+      state = .toggle
+      return
+    }
+    let currentModifiers = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
+    if !currentModifiers.contains(shortcut.modifiers.intersection(.deviceIndependentFlagsMask)) {
+      state = .toggle
+    }
   }
 
   func reset() {
     state = .toggle
+    openedAt = nil
     KeyboardShortcuts.enable(.popup)
   }
 
@@ -134,6 +153,21 @@ class Popup {
   }
 
   private func handleKeyDown(_ event: NSEvent) -> NSEvent? {
+    if !isClosed() {
+      let chord = KeyChord(event)
+      if chord == .pinOrUnpin {
+        Task { @MainActor in
+          AppState.shared.pinHoveredOrHighlighted()
+        }
+        return nil
+      } else if chord == .deleteCurrentItem {
+        Task { @MainActor in
+          AppState.shared.deleteHoveredOrHighlighted()
+        }
+        return nil
+      }
+    }
+
     if isHotKeyCode(Int(event.keyCode)) {
       if let item = History.shared.pressedShortcutItem {
         AppState.shared.navigator.select(item: item)
@@ -141,6 +175,13 @@ class Popup {
           AppState.shared.history.select(item)
         }
         return nil
+      }
+
+      if let openedAt = openedAt {
+        let timeSinceOpen = openedAt.timeIntervalSinceNow
+        if abs(timeSinceOpen) > 0.3 {
+          state = .toggle
+        }
       }
 
       if state == .opening {

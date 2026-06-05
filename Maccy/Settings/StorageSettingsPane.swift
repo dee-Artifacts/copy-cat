@@ -65,6 +65,11 @@ struct StorageSettingsPane: View {
   @State private var storageSize = Storage.shared.size
   @State private var sizeText = ""
 
+  @Environment(\.colorScheme) private var colorScheme
+  private var brandAccent: Color {
+    colorScheme == .dark ? Color(hex: "57D559")! : Color(hex: "024E50")!
+  }
+
   var body: some View {
     Settings.Container(contentWidth: 450) {
       Settings.Section(
@@ -111,12 +116,12 @@ struct StorageSettingsPane: View {
               Text("Save")
                 .font(.system(size: 12, weight: .medium))
             }
-            .foregroundStyle(Color(red: 0.94, green: 0.34, blue: 0.15))
+            .foregroundStyle(brandAccent)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
-            .background(Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.1))
+            .background(brandAccent.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.4), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(brandAccent.opacity(0.4), lineWidth: 1))
           }
           .buttonStyle(.plain)
           .help("Save history limit")
@@ -152,12 +157,12 @@ struct StorageSettingsPane: View {
               Text("Export CSV (.zip)")
                 .font(.system(size: 12, weight: .medium))
             }
-            .foregroundStyle(Color(red: 0.94, green: 0.34, blue: 0.15))
+            .foregroundStyle(brandAccent)
             .padding(.horizontal, 12)
             .padding(.vertical, 5)
-            .background(Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.1))
+            .background(brandAccent.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.4), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(brandAccent.opacity(0.4), lineWidth: 1))
           }
           .buttonStyle(.plain)
           .help("Export clipboard and pinboards as CSV files inside a zip archive")
@@ -171,12 +176,12 @@ struct StorageSettingsPane: View {
               Text("Export PDF")
                 .font(.system(size: 12, weight: .medium))
             }
-            .foregroundStyle(Color(red: 0.94, green: 0.34, blue: 0.15))
+            .foregroundStyle(brandAccent)
             .padding(.horizontal, 12)
             .padding(.vertical, 5)
-            .background(Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.1))
+            .background(brandAccent.opacity(0.1))
             .clipShape(RoundedRectangle(cornerRadius: 6))
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.4), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(brandAccent.opacity(0.4), lineWidth: 1))
           }
           .buttonStyle(.plain)
           .help("Export clipboard and pinboards as a formatted PDF")

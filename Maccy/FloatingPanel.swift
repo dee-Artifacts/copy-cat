@@ -16,6 +16,11 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
     set {}
   }
 
+  override var hasShadow: Bool {
+    get { false }
+    set { super.hasShadow = false }
+  }
+
   init(
     contentRect: NSRect,
     identifier: String = "",
@@ -31,6 +36,8 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
         backing: .buffered,
         defer: false
     )
+
+    self.hasShadow = false
 
     self.statusBarButton = statusBarButton
     self.identifier = NSUserInterfaceItemIdentifier(identifier)
@@ -93,6 +100,24 @@ class FloatingPanel<Content: View>: NSPanel, NSWindowDelegate {
     orderFrontRegardless()
     makeKey()
     isPresented = true
+  }
+
+  func expandToFullScreen() {
+    guard let screen = screen ?? NSScreen.main ?? NSScreen.screens.first else { return }
+    let screenHeight = screen.frame.height
+    fixedHeight = screenHeight
+    minSize = NSSize(width: 300, height: screenHeight)
+    maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: screenHeight)
+    setFrame(NSRect(x: screen.frame.minX, y: screen.frame.minY, width: screen.frame.width, height: screenHeight), display: true)
+  }
+
+  func collapseToNormal() {
+    guard let screen = screen ?? NSScreen.main ?? NSScreen.screens.first else { return }
+    let panelHeight: CGFloat = 270
+    fixedHeight = panelHeight
+    minSize = NSSize(width: 300, height: panelHeight)
+    maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: panelHeight)
+    setFrame(NSRect(x: screen.frame.minX, y: screen.frame.minY, width: screen.frame.width, height: panelHeight), display: true)
   }
 
   func verticallyResize(to newHeight: CGFloat) {

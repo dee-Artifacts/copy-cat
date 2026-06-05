@@ -1,3 +1,4 @@
+import Defaults
 import Foundation
 import SwiftUI
 
@@ -11,11 +12,63 @@ class NavigationManager { // swiftlint:disable:this type_body_length
     self.footer = footer
   }
 
+  var selectedPinboard: PinboardModel?
+
+  func cyclePinboard() {
+    let pinboards = PinboardStore.shared.pinboards
+    if selectedPinboard == nil {
+      if let first = pinboards.first {
+        selectedPinboard = first
+      }
+    } else if let current = selectedPinboard,
+              let index = pinboards.firstIndex(where: { $0.id == current.id }) {
+      if index + 1 < pinboards.count {
+        selectedPinboard = pinboards[index + 1]
+      } else {
+        selectedPinboard = nil
+      }
+    } else {
+      selectedPinboard = nil
+    }
+    highlightFirstCardInCurrentTab()
+  }
+
+  func highlightFirstCardInCurrentTab() {
+    let firstCardID = getFirstCardIDInCurrentTab()
+    activeQuickHighlightID = firstCardID
+  }
+
+  private func getFirstCardIDInCurrentTab() -> UUID? {
+    if let pinboard = selectedPinboard {
+      let entries = PinboardStore.shared.entries(for: pinboard)
+      let sorted = entries.sorted(by: { $0.copiedAt > $1.copiedAt })
+      return sorted.first?.id
+    } else {
+      let visibleHistory = history.items.filter { dec in
+        guard let bundleID = dec.item.application else { return true }
+        return !Defaults[.ignoredApps].contains(bundleID)
+      }
+      let pinned = visibleHistory.filter { $0.isPinned }
+      let unpinned = visibleHistory.filter { !$0.isPinned }
+      return (pinned + unpinned).first?.id
+    }
+  }
+
   var selection: Selection<HistoryItemDecorator> = Selection() {
     willSet {
       selection.forEach { _, item in item.selectionIndex = -1 }
       newValue.forEach { index, item in item.selectionIndex = index }
     }
+  }
+
+  var hoveredCardID: UUID?
+  var activeQuickHighlightID: UUID?
+
+  var targetCardID: UUID? {
+    if let qh = activeQuickHighlightID {
+      return qh
+    }
+    return hoveredCardID
   }
 
   var scrollTarget: UUID?

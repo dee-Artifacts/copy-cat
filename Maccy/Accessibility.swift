@@ -10,9 +10,20 @@ struct Accessibility {
     AXIsProcessTrustedWithOptions(opts)
   }
 
-  // Called before paste — silently no-ops if already granted, prompts if not
-  static func check() {
-    guard !allowed else { return }
+  // Called before paste — shows success if active, prompts settings if not
+  static func check(showSuccessAlert: Bool = false) {
+    if allowed {
+      if showSuccessAlert {
+        let alert = NSAlert()
+        alert.messageText = "Accessibility Permission Active"
+        alert.informativeText = "Copy Cat already has Accessibility permission. Auto-paste is enabled and ready to use."
+        alert.addButton(withTitle: "OK")
+        
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+      }
+      return
+    }
     
     let alert = NSAlert()
     alert.messageText = "Accessibility Permission Required"

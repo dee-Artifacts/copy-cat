@@ -147,6 +147,20 @@ struct KeyHandlingView<Content: View>: View {
         case .pinOrUnpin:
           appState.togglePin()
           return .handled
+        case .activatePasteStack:
+          if appState.navigator.isMultiSelectInProgress {
+            appState.navigator.isManualMultiSelect = false
+            appState.history.startPasteStack(selection: &appState.navigator.selection)
+            appState.popup.close()
+          } else if let selected = appState.navigator.leadHistoryItem {
+            var selection = Selection(items: [selected])
+            appState.history.startPasteStack(selection: &selection)
+            appState.popup.close()
+          }
+          return .handled
+        case .search:
+          searchFocused = true
+          return .handled
         case .selectCurrentItem:
           appState.select()
           return .handled

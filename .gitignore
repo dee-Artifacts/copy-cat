@@ -13,3 +13,6 @@ build/
 # Scratch / test files
 pasteboard_test.swift
 test_url.swift
+
+# Coverage output
+*.profraw

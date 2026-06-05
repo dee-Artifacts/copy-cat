@@ -4,6 +4,7 @@ import AppKit
 struct PinboardEntryCard: View {
   let entry: PinboardEntry
   let pinboard: PinboardModel
+  var isQuickHighlighted: Bool = false
   @State private var isHovered = false
   @State private var ogMeta: OGMetadata? = nil
   @State private var ogImage: NSImage? = nil
@@ -74,10 +75,12 @@ struct PinboardEntryCard: View {
     .overlay(
       RoundedRectangle(cornerRadius: 12)
         .stroke(
-          isHovered
-            ? Color(red: 0.94, green: 0.34, blue: 0.15)
-            : Color(red: 0.21, green: 0.21, blue: 0.20),
-          lineWidth: isHovered ? 1.5 : 1
+          isQuickHighlighted
+            ? Color(hex: "57D559")!
+            : ((isHovered && AppState.shared.navigator.activeQuickHighlightID == nil)
+                ? Color(hex: "57D559")!
+                : Color(red: 0.21, green: 0.21, blue: 0.20)),
+          lineWidth: isQuickHighlighted ? 2.5 : ((isHovered && AppState.shared.navigator.activeQuickHighlightID == nil) ? 1.5 : 1)
         )
     )
     .overlay(alignment: .topTrailing) { pinOverlay }
@@ -227,7 +230,7 @@ struct PinboardEntryCard: View {
           .font(.system(size: 11, weight: .semibold))
           .foregroundStyle(.white)
           .frame(width: 26, height: 26)
-          .background(entry.isPinned ? Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.9) : Color.black.opacity(0.4))
+          .background(entry.isPinned ? Color(hex: "024E50")!.opacity(0.9) : Color.black.opacity(0.4))
           .clipShape(Circle())
       }
       .buttonStyle(.plain)

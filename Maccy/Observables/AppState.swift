@@ -101,6 +101,40 @@ class AppState: Sendable {
     }
   }
 
+  @MainActor
+  func pinHoveredOrHighlighted() {
+    guard let targetID = navigator.targetCardID else { return }
+    if let dec = history.items.first(where: { $0.id == targetID }) {
+      history.togglePin(dec)
+    } else {
+      for pinboard in PinboardStore.shared.pinboards {
+        if let entry = PinboardStore.shared.entries(for: pinboard).first(where: { $0.id == targetID }) {
+          PinboardStore.shared.togglePin(entry, in: pinboard)
+          break
+        }
+      }
+    }
+  }
+
+  @MainActor
+  func deleteHoveredOrHighlighted() {
+    guard let targetID = navigator.targetCardID else { return }
+    if let dec = history.items.first(where: { $0.id == targetID }) {
+      if navigator.hoveredCardID == targetID { navigator.hoveredCardID = nil }
+      if navigator.activeQuickHighlightID == targetID { navigator.activeQuickHighlightID = nil }
+      history.delete(dec)
+    } else {
+      for pinboard in PinboardStore.shared.pinboards {
+        if let entry = PinboardStore.shared.entries(for: pinboard).first(where: { $0.id == targetID }) {
+          if navigator.hoveredCardID == targetID { navigator.hoveredCardID = nil }
+          if navigator.activeQuickHighlightID == targetID { navigator.activeQuickHighlightID = nil }
+          PinboardStore.shared.delete(entry, from: pinboard)
+          break
+        }
+      }
+    }
+  }
+
   func openAbout() {
     about.openAbout(nil)
   }

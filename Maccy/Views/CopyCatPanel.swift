@@ -37,7 +37,7 @@ private struct TabChip: View {
       .clipShape(Capsule())
       .overlay(
         Capsule().stroke(
-          isDropTarget ? Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.8) :
+          isDropTarget ? color.opacity(0.8) :
           (isSelected ? color.opacity(0.3) : Color.clear),
           lineWidth: isDropTarget ? 1.5 : 1
         )
@@ -88,7 +88,10 @@ struct CustomDragState {
 struct CopyCatPanel: View {
   let appState = AppState.shared
   let pinboardStore = PinboardStore.shared
-  @State private var selectedPinboard: PinboardModel? = nil
+  private var selectedPinboard: PinboardModel? {
+    get { appState.navigator.selectedPinboard }
+    nonmutating set { appState.navigator.selectedPinboard = newValue }
+  }
   @State private var searchText = ""
   @State private var showNewPinboard = false
   @State private var dropTargetPinboard: PinboardModel? = nil
@@ -103,10 +106,15 @@ struct CopyCatPanel: View {
   @State private var tabChipFrames: [String: CGRect] = [:]
   @State private var cardFrames: [UUID: CGRect] = [:]
   @State private var separatorFrames: [String: CGRect] = [:]
+  @State private var globalPanelFrame: CGRect = .zero
   @State private var pinboardToRename: PinboardModel? = nil
   @State private var newPinboardName = ""
   @State private var showDeletePinboardConfirmation = false
   @State private var pinboardToDelete: PinboardModel? = nil
+  private var activeQuickHighlightID: UUID? {
+    get { appState.navigator.activeQuickHighlightID }
+    nonmutating set { appState.navigator.activeQuickHighlightID = newValue }
+  }
   @Default(.ignoredApps) private var ignoredApps
 
   private var visibleHistory: [HistoryItemDecorator] {
@@ -142,38 +150,79 @@ struct CopyCatPanel: View {
            parsedSite.localizedCaseInsensitiveContains(searchText) ||
            (entry.fileURLStrings ?? []).joined(separator: " ").localizedCaseInsensitiveContains(searchText)
   }
-
-  // MARK: body
-  var body: some View {
-    ZStack {
-      // Layer 1: macOS frosted-glass blur
-      if #available(macOS 26.0, *) { GlassEffectView() } else {
-        VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+  
+  private var currentTabCardIDs: [UUID] {
+    if !searchText.isEmpty {
+      let matchedPinned = filteredPinned
+      let matchedRecent = filteredRecent
+      let boardResults: [PinboardSearchResult] = pinboardStore.pinboards.compactMap { board in
+        let matched = pinboardStore.entries(for: board).filter { matchesPinboardEntry($0) }
+        return matched.isEmpty ? nil : PinboardSearchResult(board: board, entries: matched)
       }
-      // Layer 2: dark tint overlay for Obsidian Ember depth
-      Color(red: 0.075, green: 0.075, blue: 0.075).opacity(0.53)
-        .ignoresSafeArea()
-
-      VStack(spacing: 0) {
-        toolbar
-          .frame(height: Layout.toolbarHeight)
-
-        Divider().opacity(0.15)
-
-        Spacer().frame(height: 18)
-
-        cardStrip
-          .frame(height: Layout.cardStripHeight)
+      var ids = matchedPinned.map(\.id) + matchedRecent.map(\.id)
+      for res in boardResults {
+        ids.append(contentsOf: res.entries.map(\.id))
       }
+      return ids
+    } else if let pinboard = selectedPinboard {
+      let entries = pinboardStore.entries(for: pinboard)
+      let pinned = entries.filter { $0.isPinned }
+      let unpinned = entries.filter { !$0.isPinned }
+      return (pinned + unpinned).map(\.id)
+    } else {
+      return filteredPinned.map(\.id) + filteredRecent.map(\.id)
     }
-    // Exact fixed frame — matches panel height set in FloatingPanel.open()
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+
+  var body: some View {
+    GeometryReader { geo in
+      VStack(spacing: 0) {
+        Spacer(minLength: 0)
+
+        ZStack {
+          // Layer 1: macOS frosted-glass blur
+          if #available(macOS 26.0, *) { GlassEffectView() } else {
+            VisualEffectView(material: .hudWindow, blendingMode: .behindWindow)
+          }
+          // Layer 2: dark tint overlay for Obsidian Ember depth
+          Color(red: 0.075, green: 0.075, blue: 0.075).opacity(0.53)
+            .ignoresSafeArea()
+
+          VStack(spacing: 0) {
+            toolbar
+              .frame(height: Layout.toolbarHeight)
+
+            Divider().opacity(0.15)
+
+            Spacer().frame(height: 18)
+
+            cardStrip
+              .frame(height: Layout.cardStripHeight)
+          }
+        }
+        .frame(height: 270)
+        .background(
+          GeometryReader { panelGeo in
+            Color.clear
+              .onAppear {
+                globalPanelFrame = panelGeo.frame(in: .global)
+              }
+              .onChange(of: panelGeo.frame(in: .global)) { _, newFrame in
+                globalPanelFrame = newFrame
+              }
+          }
+        )
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
     // Drag overlay — position derived from cursor directly, no dictionary reads during drag
     .overlay {
       if let state = dragState {
         let ghostX = state.location.x + state.grabOffset.width
         let ghostY = state.location.y + state.grabOffset.height
-        let tilt = Double(state.location.x - state.startCursor.x) / 25
+        let isOutside = !globalPanelFrame.isEmpty && !globalPanelFrame.contains(state.location)
+        let tilt = isOutside ? 0.0 : Double(state.location.x - state.startCursor.x) / 25
+        let scale = isOutside ? 1.0 : 1.05
 
         Group {
           if let dec = state.decorator {
@@ -185,13 +234,13 @@ struct CopyCatPanel: View {
         .frame(width: 160, height: 180)
         .overlay(
           RoundedRectangle(cornerRadius: 12)
-            .stroke(Color(red: 0.94, green: 0.34, blue: 0.15), lineWidth: 1.5)
+            .stroke(Color(hex: "57D559")!, lineWidth: 1.5)
         )
         .position(x: ghostX, y: ghostY)
         .allowsHitTesting(false)
         .shadow(color: .black.opacity(0.6), radius: 20, y: 15)
         .rotation3DEffect(.degrees(tilt), axis: (x: 0, y: 1, z: 0))
-        .scaleEffect(1.05)
+        .scaleEffect(scale)
       }
     }
     // Drop target label — floats above ghost card, animates in/out when target changes
@@ -203,14 +252,17 @@ struct CopyCatPanel: View {
 
         Group {
           if let name = targetName {
+            let bgColor = dropTargetPinboard?.uiColor ?? Color(hex: "57D559")!
+            let fgColor = dropTargetPinboard.map { contrastColor(for: $0.colorHex) } ?? Color(hex: "024E50")!
+
             Text(name == "Clipboard" ? "Move to Clipboard" : "Add to \(name)")
               .font(.system(size: 11, weight: .semibold))
-              .foregroundStyle(.white)
+              .foregroundStyle(fgColor)
               .padding(.horizontal, 10)
               .padding(.vertical, 5)
-              .background(Color(red: 0.94, green: 0.34, blue: 0.15))
+              .background(bgColor)
               .clipShape(Capsule())
-              .shadow(color: Color(red: 0.94, green: 0.34, blue: 0.15).opacity(0.4), radius: 8)
+              .shadow(color: bgColor.opacity(0.4), radius: 8)
               .position(x: ghostX, y: max(20, ghostY - 110))
               .allowsHitTesting(false)
               .transition(.scale(scale: 0.85).combined(with: .opacity))
@@ -285,12 +337,12 @@ struct CopyCatPanel: View {
         HStack(spacing: 6) {
           Image(systemName: "magnifyingglass")
             .font(.system(size: 11))
-            .foregroundStyle(Color(red: 0.94, green: 0.34, blue: 0.15)) // branding orange
+            .foregroundStyle(Color(hex: "57D559")!) // branding green
           TextField("Search...", text: $searchText)
             .textFieldStyle(.plain)
             .font(.system(size: 11))
             .foregroundStyle(Color(red: 0.90, green: 0.89, blue: 0.88))
-            .tint(Color(red: 0.94, green: 0.34, blue: 0.15)) // orange caret
+            .tint(Color(hex: "57D559")!) // green caret
           if !searchText.isEmpty {
             Button { searchText = "" } label: {
               Image(systemName: "xmark.circle.fill")
@@ -318,7 +370,7 @@ struct CopyCatPanel: View {
           HStack(spacing: 6) {
             TabChip(
               label: "Clipboard",
-              color: Color(red: 0.94, green: 0.34, blue: 0.15),
+              color: Color(hex: "57D559")!,
               isSelected: selectedPinboard == nil,
               isDropTarget: isClipboardDropTarget
             ) {
@@ -367,23 +419,91 @@ struct CopyCatPanel: View {
 
   // MARK: - Card strip
   private var cardStrip: some View {
-    ScrollView(.horizontal, showsIndicators: false) {
-      // Use HStack (not Lazy) — avoids lazy sizing quirks that cause height
-      // to be undefined during SwiftUI layout passes triggered by pin/unpin.
-      HStack(alignment: .center, spacing: 12) {
-        if !searchText.isEmpty {
-          globalSearchContent
-        } else if let pinboard = selectedPinboard {
-          pinboardContent(for: pinboard)
-        } else {
-          clipboardContent
+    ScrollViewReader { proxy in
+      ScrollView(.horizontal, showsIndicators: false) {
+        // Use HStack (not Lazy) — avoids lazy sizing quirks that cause height
+        // to be undefined during SwiftUI layout passes triggered by pin/unpin.
+        HStack(alignment: .center, spacing: 12) {
+          if !searchText.isEmpty {
+            globalSearchContent
+          } else if let pinboard = selectedPinboard {
+            pinboardContent(for: pinboard)
+          } else {
+            clipboardContent
+          }
+        }
+        .padding(.leading, 16)
+        .padding(.trailing, 24)
+        .padding(.vertical, 8)
+        .frame(height: Layout.cardHeight + 16) // extra room for hover scale
+      }
+      .onReceive(NotificationCenter.default.publisher(for: .commandVQuickNavigateLeft)) { _ in
+        navigateSelection(direction: -1, proxy: proxy)
+      }
+      .onReceive(NotificationCenter.default.publisher(for: .commandVQuickNavigateRight)) { _ in
+        navigateSelection(direction: 1, proxy: proxy)
+      }
+      .onReceive(NotificationCenter.default.publisher(for: .commandVQuickNavigatePinboard)) { _ in
+        appState.navigator.cyclePinboard()
+        if let firstID = appState.navigator.activeQuickHighlightID {
+          withAnimation(.spring(response: 0.2, dampingFraction: 0.85)) {
+            proxy.scrollTo(firstID, anchor: .center)
+          }
         }
       }
-      .padding(.leading, 16)
-      .padding(.trailing, 24)
-      .padding(.vertical, 8)
-      .frame(height: Layout.cardHeight + 16) // extra room for hover scale
+      .onReceive(NotificationCenter.default.publisher(for: .commandVQuickRelease)) { _ in
+        pasteHighlightedItemAndClose()
+      }
     }
+  }
+
+  private func navigateSelection(direction: Int, proxy: ScrollViewProxy) {
+    let ids = currentTabCardIDs
+    guard !ids.isEmpty else { return }
+    let currentIndex = ids.firstIndex(where: { $0 == activeQuickHighlightID })
+    let nextIndex: Int
+    if let current = currentIndex {
+      nextIndex = (current + direction + ids.count) % ids.count
+    } else {
+      nextIndex = direction >= 0 ? 0 : ids.count - 1
+    }
+    let nextID = ids[nextIndex]
+    activeQuickHighlightID = nextID
+    withAnimation(.spring(response: 0.2, dampingFraction: 0.85)) {
+      proxy.scrollTo(nextID, anchor: .center)
+    }
+  }
+
+  private func pasteHighlightedItemAndClose() {
+    CommandVMonitor.shared.writeDebugLog("pasteHighlightedItemAndClose called, activeQuickHighlightID=\(String(describing: activeQuickHighlightID))")
+    fputs("pasteHighlightedItemAndClose called, activeQuickHighlightID=\(String(describing: activeQuickHighlightID))\n", stderr)
+    fflush(stderr)
+    guard let highlightID = activeQuickHighlightID else {
+      CommandVMonitor.shared.writeDebugLog("pasteHighlightedItemAndClose: activeQuickHighlightID is nil, just closing popup")
+      AppState.shared.popup.close()
+      return
+    }
+    if let decorator = visibleHistory.first(where: { $0.id == highlightID }) {
+      CommandVMonitor.shared.writeDebugLog("pasteHighlightedItemAndClose: found in visibleHistory (clipboard), closing popup and pasting...")
+      AppState.shared.popup.close()
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        CommandVMonitor.shared.writeDebugLog("pasteHighlightedItemAndClose (async): copying item and calling Clipboard.shared.paste()")
+        Clipboard.shared.copy(decorator.item, removeFormatting: Defaults[.removeFormattingByDefault])
+        Clipboard.shared.paste()
+      }
+    } else if let entryTuple = pinboardStore.findEntry(with: highlightID) {
+      CommandVMonitor.shared.writeDebugLog("pasteHighlightedItemAndClose: found in pinboard, closing popup and pasting...")
+      AppState.shared.popup.close()
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        CommandVMonitor.shared.writeDebugLog("pasteHighlightedItemAndClose (async): copying pinboard entry and calling Clipboard.shared.paste()")
+        copyPinboardEntryToClipboard(entryTuple.entry)
+        Clipboard.shared.paste()
+      }
+    } else {
+      CommandVMonitor.shared.writeDebugLog("pasteHighlightedItemAndClose: highlightID not found in history or pinboards, just closing")
+      AppState.shared.popup.close()
+    }
+    activeQuickHighlightID = nil
   }
 
   // MARK: - Global search (across clipboard + all pinboards)
@@ -409,26 +529,47 @@ struct CopyCatPanel: View {
       .frame(maxWidth: .infinity)
     } else {
       ForEach(matchedPinned) { dec in
-        ClipCard(decorator: dec)
+        ClipCard(decorator: dec, isQuickHighlighted: activeQuickHighlightID == dec.id)
           .background(cardGeometry(dec.id))
           .opacity(dragState?.id == dec.id ? 0 : 1)
           .gesture(dragGesture(for: dec))
           .onTapGesture { tapCard(dec) }
+          .onHover { isHovered in
+            if isHovered {
+              appState.navigator.hoveredCardID = dec.id
+            } else if appState.navigator.hoveredCardID == dec.id {
+              appState.navigator.hoveredCardID = nil
+            }
+          }
       }
       ForEach(matchedRecent) { dec in
-        ClipCard(decorator: dec)
+        ClipCard(decorator: dec, isQuickHighlighted: activeQuickHighlightID == dec.id)
           .background(cardGeometry(dec.id))
           .opacity(dragState?.id == dec.id ? 0 : 1)
           .gesture(dragGesture(for: dec))
           .onTapGesture { tapCard(dec) }
+          .onHover { isHovered in
+            if isHovered {
+              appState.navigator.hoveredCardID = dec.id
+            } else if appState.navigator.hoveredCardID == dec.id {
+              appState.navigator.hoveredCardID = nil
+            }
+          }
       }
       ForEach(boardResults) { result in
         PinboardSeparator(label: String(result.board.name.prefix(3)).uppercased())
         ForEach(result.entries) { entry in
-          PinboardEntryCard(entry: entry, pinboard: result.board)
+          PinboardEntryCard(entry: entry, pinboard: result.board, isQuickHighlighted: activeQuickHighlightID == entry.id)
             .background(cardGeometry(entry.id))
             .opacity(dragState?.id == entry.id ? 0 : 1)
             .gesture(dragGesture(for: entry, in: result.board))
+            .onHover { isHovered in
+              if isHovered {
+                appState.navigator.hoveredCardID = entry.id
+              } else if appState.navigator.hoveredCardID == entry.id {
+                appState.navigator.hoveredCardID = nil
+              }
+            }
         }
       }
     }
@@ -450,13 +591,20 @@ struct CopyCatPanel: View {
     } else {
       if !filteredPinned.isEmpty {
         ForEach(filteredPinned) { decorator in
-          ClipCard(decorator: decorator)
+          ClipCard(decorator: decorator, isQuickHighlighted: activeQuickHighlightID == decorator.id)
             .background(cardGeometry(decorator.id))
             .opacity(dragState?.id == decorator.id ? 0 : 1)
             .offset(x: shiftedCardIDs.contains(decorator.id) ? Layout.cardWidth + 12 : 0)
             .animation(.spring(response: 0.25, dampingFraction: 0.8), value: shiftedCardIDs.contains(decorator.id))
             .gesture(dragGesture(for: decorator))
             .onTapGesture { tapCard(decorator) }
+            .onHover { isHovered in
+              if isHovered {
+                appState.navigator.hoveredCardID = decorator.id
+              } else if appState.navigator.hoveredCardID == decorator.id {
+                appState.navigator.hoveredCardID = nil
+              }
+            }
         }
         Color.clear
           .frame(width: showPinnedEndGap ? Layout.cardWidth : 0, height: 1)
@@ -465,13 +613,20 @@ struct CopyCatPanel: View {
           .background(separatorGeometry("clipboard_pin"))
       }
       ForEach(filteredRecent) { decorator in
-        ClipCard(decorator: decorator)
+        ClipCard(decorator: decorator, isQuickHighlighted: activeQuickHighlightID == decorator.id)
           .background(cardGeometry(decorator.id))
           .opacity(dragState?.id == decorator.id ? 0 : 1)
           .offset(x: shiftedCardIDs.contains(decorator.id) ? Layout.cardWidth + 12 : 0)
           .animation(.spring(response: 0.25, dampingFraction: 0.8), value: shiftedCardIDs.contains(decorator.id))
           .gesture(dragGesture(for: decorator))
           .onTapGesture { tapCard(decorator) }
+          .onHover { isHovered in
+            if isHovered {
+              appState.navigator.hoveredCardID = decorator.id
+            } else if appState.navigator.hoveredCardID == decorator.id {
+              appState.navigator.hoveredCardID = nil
+            }
+          }
       }
     }
   }
@@ -504,12 +659,19 @@ struct CopyCatPanel: View {
     } else {
       if !pinnedEntries.isEmpty {
         ForEach(pinnedEntries) { entry in
-          PinboardEntryCard(entry: entry, pinboard: pinboard)
+          PinboardEntryCard(entry: entry, pinboard: pinboard, isQuickHighlighted: activeQuickHighlightID == entry.id)
             .background(cardGeometry(entry.id))
             .opacity(dragState?.id == entry.id ? 0 : 1)
             .offset(x: shiftedCardIDs.contains(entry.id) ? Layout.cardWidth + 12 : 0)
             .animation(.spring(response: 0.25, dampingFraction: 0.8), value: shiftedCardIDs.contains(entry.id))
             .gesture(dragGesture(for: entry, in: pinboard))
+            .onHover { isHovered in
+              if isHovered {
+                appState.navigator.hoveredCardID = entry.id
+              } else if appState.navigator.hoveredCardID == entry.id {
+                appState.navigator.hoveredCardID = nil
+              }
+            }
         }
         Color.clear
           .frame(width: showPinnedEndGap ? Layout.cardWidth : 0, height: 1)
@@ -518,14 +680,32 @@ struct CopyCatPanel: View {
           .background(separatorGeometry("pinboard_pin"))
       }
       ForEach(unpinnedEntries) { entry in
-        PinboardEntryCard(entry: entry, pinboard: pinboard)
+        PinboardEntryCard(entry: entry, pinboard: pinboard, isQuickHighlighted: activeQuickHighlightID == entry.id)
           .background(cardGeometry(entry.id))
           .opacity(dragState?.id == entry.id ? 0 : 1)
           .offset(x: shiftedCardIDs.contains(entry.id) ? Layout.cardWidth + 12 : 0)
           .animation(.spring(response: 0.25, dampingFraction: 0.8), value: shiftedCardIDs.contains(entry.id))
           .gesture(dragGesture(for: entry, in: pinboard))
+          .onHover { isHovered in
+            if isHovered {
+              appState.navigator.hoveredCardID = entry.id
+            } else if appState.navigator.hoveredCardID == entry.id {
+              appState.navigator.hoveredCardID = nil
+            }
+          }
       }
     }
+  }
+
+  private func contrastColor(for hex: String) -> Color {
+    let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+    var int: UInt64 = 0
+    guard Scanner(string: hex).scanHexInt64(&int), hex.count == 6 else { return .white }
+    let r = Double((int >> 16) & 0xFF) / 255
+    let g = Double((int >>  8) & 0xFF) / 255
+    let b = Double(int         & 0xFF) / 255
+    let luminance = 0.299 * r + 0.587 * g + 0.114 * b
+    return luminance > 0.6 ? Color(hex: "024E50")! : .white
   }
 
   // MARK: - Card tap action
@@ -564,6 +744,7 @@ struct CopyCatPanel: View {
     DragGesture(minimumDistance: 3, coordinateSpace: .global)
       .onChanged { value in
         if dragState == nil {
+          AppState.shared.appDelegate?.panel.expandToFullScreen()
           let frame = cardFrames[decorator.id] ?? .zero
           dragState = CustomDragState(
             id: decorator.id,
@@ -580,6 +761,7 @@ struct CopyCatPanel: View {
         updateDropTarget(at: value.location)
       }
       .onEnded { value in
+        AppState.shared.appDelegate?.panel.collapseToNormal()
         let dropped = executeDrop(at: value.location)
         if dropped {
           dragState = nil
@@ -605,6 +787,7 @@ struct CopyCatPanel: View {
     DragGesture(minimumDistance: 3, coordinateSpace: .global)
       .onChanged { value in
         if dragState == nil {
+          AppState.shared.appDelegate?.panel.expandToFullScreen()
           let frame = cardFrames[entry.id] ?? .zero
           dragState = CustomDragState(
             id: entry.id,
@@ -622,6 +805,7 @@ struct CopyCatPanel: View {
         updateDropTarget(at: value.location)
       }
       .onEnded { value in
+        AppState.shared.appDelegate?.panel.collapseToNormal()
         let dropped = executeDrop(at: value.location)
         if dropped {
           dragState = nil
@@ -733,6 +917,25 @@ struct CopyCatPanel: View {
   private func executeDrop(at location: CGPoint) -> Bool {
     updateDropTarget(at: location)
     guard let state = dragState else { return false }
+
+    // Drop outside the panel to paste
+    if !globalPanelFrame.isEmpty && !globalPanelFrame.contains(location) {
+      if let dec = state.decorator {
+        Clipboard.shared.copy(dec.item, removeFormatting: Defaults[.removeFormattingByDefault])
+        AppState.shared.popup.close()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+          Clipboard.shared.paste()
+        }
+        return true
+      } else if let entry = state.entry {
+        copyPinboardEntryToClipboard(entry)
+        AppState.shared.popup.close()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+          Clipboard.shared.paste()
+        }
+        return true
+      }
+    }
 
     if isPinToggleDrop {
       if let dec = state.decorator {
@@ -859,6 +1062,30 @@ struct CopyCatPanel: View {
         .onAppear { separatorFrames[key] = geo.frame(in: .global) }
         .onChange(of: geo.frame(in: .global)) { _, f in separatorFrames[key] = f }
     }
+  }
+
+  private func copyPinboardEntryToClipboard(_ entry: PinboardEntry) {
+    let pb = NSPasteboard.general
+    pb.clearContents()
+
+    if let imageData = entry.imageData {
+      pb.setData(imageData, forType: .tiff)
+    } else if let fileURLStrings = entry.fileURLStrings, !fileURLStrings.isEmpty {
+      let items: [NSPasteboardItem] = fileURLStrings.compactMap { str -> NSPasteboardItem? in
+        guard let url = URL(string: str),
+              let data = url.dataRepresentation as Data? else { return nil }
+        let item = NSPasteboardItem()
+        item.setData(data, forType: .fileURL)
+        return item
+      }
+      pb.writeObjects(items)
+    } else if let text = entry.text {
+      pb.setString(text, forType: .string)
+    } else {
+      return
+    }
+
+    Clipboard.shared.checkForChangesInPasteboard()
   }
 
 }

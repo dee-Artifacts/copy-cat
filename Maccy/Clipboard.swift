@@ -127,7 +127,14 @@ class Clipboard {
 
   // Based on https://github.com/Clipy/Clipy/blob/develop/Clipy/Sources/Services/PasteService.swift.
   func paste() {
-    Accessibility.check()
+    CommandVMonitor.shared.writeDebugLog("Clipboard.paste() called, Accessibility.allowed = \(Accessibility.allowed)")
+    fputs("Clipboard.paste called, allowed=\(Accessibility.allowed)\n", stderr)
+    fflush(stderr)
+    guard Accessibility.allowed else {
+      CommandVMonitor.shared.writeDebugLog("Clipboard.paste(): Accessibility not allowed, calling Accessibility.check()")
+      Accessibility.check(showSuccessAlert: false)
+      return
+    }
 
     // Add flag that left/right modifier key has been pressed.
     // See https://github.com/TermiT/Flycut/pull/18 for details.
@@ -150,8 +157,18 @@ class Clipboard {
     let keyVUp = CGEvent(keyboardEventSource: source, virtualKey: vCode, keyDown: false)
     keyVDown?.flags = cmdFlag
     keyVUp?.flags = cmdFlag
+    // Stamp our synthesized paste so CommandVMonitor's event tap recognizes it and
+    // passes it through to the frontmost app instead of mistaking it for the user
+    // pressing ⌘V to open Copy Cat (which would swallow the paste).
+    keyVDown?.setIntegerValueField(.eventSourceUserData, value: CommandVMonitor.synthesizedEventMarker)
+    keyVUp?.setIntegerValueField(.eventSourceUserData, value: CommandVMonitor.synthesizedEventMarker)
+    CommandVMonitor.shared.writeDebugLog("Clipboard.paste(): posting keydown and keyup for vCode=\(vCode), flags=\(cmdFlag.rawValue)")
+    CommandVMonitor.shared.isSimulatingPaste = true
     keyVDown?.post(tap: .cgSessionEventTap)
     keyVUp?.post(tap: .cgSessionEventTap)
+    DispatchQueue.main.async {
+      CommandVMonitor.shared.isSimulatingPaste = false
+    }
   }
 
   func clear() {
