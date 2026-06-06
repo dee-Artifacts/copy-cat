@@ -60,6 +60,19 @@ struct LicenseSettingsPane: View {
             .foregroundStyle(.gray)
         }
       }
+
+      Settings.Section(label: { Text("Support") }) {
+        VStack(alignment: .leading, spacing: 6) {
+          Button("Contact Support") {
+            if let u = URL(string: "https://copycat.deeproduct.org/support") {
+              NSWorkspace.shared.open(u)
+            }
+          }
+          Text("Questions, bugs, or feature requests — we're here to help.")
+            .controlSize(.small)
+            .foregroundStyle(.gray)
+        }
+      }
     }
   }
 

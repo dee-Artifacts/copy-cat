@@ -4,7 +4,7 @@
 set -euo pipefail
 
 APP_NAME="Copy Cat"
-VERSION="2.6.1"
+VERSION="1.0.0"
 DMG_NAME="CopyCat-${VERSION}.dmg"
 DERIVED_DATA="build/DerivedData"
 BUILD_DIR="${DERIVED_DATA}/Build/Products/Release"

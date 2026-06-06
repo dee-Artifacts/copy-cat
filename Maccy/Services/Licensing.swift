@@ -263,6 +263,9 @@ final class LicenseManager {
   /// True once the trial has expired — read off the main actor (e.g. the
   /// clipboard poll) to freeze recording until a license is activated.
   nonisolated(unsafe) static var isExpiredFlag = false
+  /// True only for a paid/activated license — read off the main actor (e.g. the
+  /// status-bar menu) to hide "Activate License…" once the user is licensed.
+  nonisolated(unsafe) static var isLicensedFlag = false
 
   private let verifier: LicenseVerifier
 
@@ -280,6 +283,7 @@ final class LicenseManager {
     state = newState
     Self.quickPasteAllowedFlag = newState.isFullAccess
     Self.isExpiredFlag = (newState == .expired)
+    Self.isLicensedFlag = (newState == .licensed)
     scheduleRefreshTimers()
   }
 

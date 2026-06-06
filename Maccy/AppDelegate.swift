@@ -206,9 +206,13 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     settingsItem.target = self
     menu.addItem(settingsItem)
 
-    let licenseItem = NSMenuItem(title: "Activate License...", action: #selector(openLicense), keyEquivalent: "")
-    licenseItem.target = self
-    menu.addItem(licenseItem)
+    // "Activate License…" is only useful until the user is licensed — hide it
+    // once a paid key is active (reappears if the license is ever removed).
+    if !LicenseManager.isLicensedFlag {
+      let licenseItem = NSMenuItem(title: "Activate License...", action: #selector(openLicense), keyEquivalent: "")
+      licenseItem.target = self
+      menu.addItem(licenseItem)
+    }
     menu.addItem(.separator())
 
     // When the trial has expired the app is locked: hide every feature item and
@@ -248,6 +252,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     let helpItem = NSMenuItem(title: "How to Use Copy Cat", action: #selector(showOnboarding), keyEquivalent: "")
     helpItem.target = self
     menu.addItem(helpItem)
+
+    let supportItem = NSMenuItem(title: "Support", action: #selector(openSupport), keyEquivalent: "")
+    supportItem.target = self
+    menu.addItem(supportItem)
     menu.addItem(.separator())
 
     if !locked {
@@ -313,6 +321,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
   @objc @MainActor func openLicense() {
     AppState.shared.openLicensePane()
+  }
+
+  @objc private func openSupport() {
+    if let url = URL(string: "https://copycat.deeproduct.org/support") {
+      NSWorkspace.shared.open(url)
+    }
   }
 
   @objc private func openPanel() {

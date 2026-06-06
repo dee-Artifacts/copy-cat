@@ -16,3 +16,7 @@ test_url.swift
 
 # Coverage output
 *.profraw
+
+# Sparkle staging (deployed via the website repo) and stray MCP output
+updates/
+.playwright-mcp/

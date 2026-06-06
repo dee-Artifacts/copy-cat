@@ -34,7 +34,11 @@
 	<true/>
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/p0deje/Maccy/master/appcast.xml</string>
+	<string>https://copycat.deeproduct.org/updates/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>zFsekNnrxJXrpX6nQ4pglse7oOi+VJON+nNP7YYe3Vg=</string>
 </dict>
 </plist>
