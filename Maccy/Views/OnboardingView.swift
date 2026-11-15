@@ -18,8 +18,8 @@ private struct CardData {
 private let cards: [CardData] = [
   CardData(icon: "gift.fill",
            gradient: [Color(red:0.16,green:0.73,blue:0.51), Color(red:0.23,green:0.51,blue:0.96)],
-           title: "Welcome — your \(LicenseConfig.trialDays)-day free trial starts now",
-           body: "Explore Copy Cat free for the next \(LicenseConfig.trialDays) days — full clipboard history, Quick Paste, and 2 free pinboards. Unlock unlimited pinboards anytime with a one-time purchase."),
+           title: "Welcome to Copy Cat — free, forever",
+           body: "Everything is unlocked: full clipboard history, Quick Paste, and unlimited pinboards. No account, no license key, no trial."),
   CardData(icon: "keyboard",
            gradient: [Color(red:0.23,green:0.51,blue:0.96), Color(red:0.44,green:0.27,blue:0.97)],
            title: "Your Clipboard, Always Ready",

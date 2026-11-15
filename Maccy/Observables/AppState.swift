@@ -149,42 +149,35 @@ class AppState: Sendable {
             title: NSLocalizedString("Title", tableName: "GeneralSettings", comment: ""),
             toolbarIcon: NSImage.gearshape!
           ) {
-            LicenseGatedPane { GeneralSettingsPane() }.settingsPaneSize()
+            GeneralSettingsPane().settingsPaneSize()
           },
           Settings.Pane(
             identifier: Settings.PaneIdentifier.storage,
             title: NSLocalizedString("Title", tableName: "StorageSettings", comment: ""),
             toolbarIcon: NSImage.externaldrive!
           ) {
-            LicenseGatedPane { StorageSettingsPane() }.settingsPaneSize()
+            StorageSettingsPane().settingsPaneSize()
           },
           Settings.Pane(
             identifier: Settings.PaneIdentifier.shortcuts,
             title: "Shortcuts",
             toolbarIcon: NSImage(systemSymbolName: "keyboard", accessibilityDescription: "Shortcuts")!
           ) {
-            LicenseGatedPane { ShortcutsSettingsPane() }.settingsPaneSize()
+            ShortcutsSettingsPane().settingsPaneSize()
           },
           Settings.Pane(
             identifier: Settings.PaneIdentifier.ignore,
             title: NSLocalizedString("Title", tableName: "IgnoreSettings", comment: ""),
             toolbarIcon: NSImage.nosign!
           ) {
-            LicenseGatedPane { IgnoreSettingsPane() }.settingsPaneSize()
-          },
-          Settings.Pane(
-            identifier: Settings.PaneIdentifier.license,
-            title: "License",
-            toolbarIcon: NSImage(systemSymbolName: "key.fill", accessibilityDescription: "License")!
-          ) {
-            LicenseSettingsPane().settingsPaneSize()
+            IgnoreSettingsPane().settingsPaneSize()
           },
           Settings.Pane(
             identifier: Settings.PaneIdentifier.advanced,
             title: NSLocalizedString("Title", tableName: "AdvancedSettings", comment: ""),
             toolbarIcon: NSImage.gearshape2!
           ) {
-            LicenseGatedPane { AdvancedSettingsPane() }.settingsPaneSize()
+            AdvancedSettingsPane().settingsPaneSize()
           }
         ]
       )
@@ -206,18 +199,14 @@ class AppState: Sendable {
     }
   }
 
-  @MainActor
-  func openLicensePane() {
-    ensureSettingsController()
-    settingsWindowController?.show(pane: .license)
-    settingsWindowController?.window?.styleMask.insert(.resizable)
-    settingsWindowController?.window?.orderFrontRegardless()
-    DispatchQueue.main.async { [weak self] in
-      self?.settingsWindowController?.show(pane: .license)
-    }
-  }
-
   func quit() {
     NSApp.terminate(self)
+  }
+}
+
+extension View {
+  /// Fixed size for every Settings pane so the window doesn't jump between tabs.
+  func settingsPaneSize() -> some View {
+    frame(width: 540, height: 480, alignment: .top)
   }
 }

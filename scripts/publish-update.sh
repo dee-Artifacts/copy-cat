@@ -18,8 +18,8 @@
 # Usage: bash scripts/publish-update.sh
 set -euo pipefail
 
-VERSION="1.0.0"   # keep in sync with MARKETING_VERSION
-DMG="CopyCat-${VERSION}.dmg"
+VERSION="1.0.1"   # keep in sync with MARKETING_VERSION
+DMG="CopyCat-${VERSION}-free.dmg"
 UPDATES_DIR="updates"
 FEED_PREFIX="https://copycat.deeproduct.org/updates/"
 
@@ -48,6 +48,6 @@ echo ""
 echo "✓ Done. Deploy these to Vercel (served at ${FEED_PREFIX}):"
 echo "    ${UPDATES_DIR}/appcast.xml"
 echo "    ${UPDATES_DIR}/${DMG}"
-echo "    ${UPDATES_DIR}/CopyCat-${VERSION}.html   (if present)"
+echo "    ${UPDATES_DIR}/CopyCat-${VERSION}-free.html   (if present)"
 echo ""
 echo "  Installed apps auto-update on their next check once it is live."

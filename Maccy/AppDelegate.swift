@@ -112,10 +112,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     migrateUserDefaults()
     disableUnusedGlobalHotkeys()
 
-    // Resolve license/trial state up front so the gate flags are set before the
-    // event tap and UI come up (starts the 7-day trial clock on first launch).
-    LicenseManager.shared.resolveOnLaunch()
-
     panel = FloatingPanel(
       contentRect: NSRect(origin: .zero, size: Defaults[.windowSize]),
       identifier: Bundle.main.bundleIdentifier ?? "org.p0deje.Maccy",
@@ -206,48 +202,34 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     settingsItem.target = self
     menu.addItem(settingsItem)
 
-    // "Activate License…" is only useful until the user is licensed — hide it
-    // once a paid key is active (reappears if the license is ever removed).
-    if !LicenseManager.isLicensedFlag {
-      let licenseItem = NSMenuItem(title: "Activate License...", action: #selector(openLicense), keyEquivalent: "")
-      licenseItem.target = self
-      menu.addItem(licenseItem)
-    }
     menu.addItem(.separator())
 
-    // When the trial has expired the app is locked: hide every feature item and
-    // leave only Open/Settings/Activate License/Help/Uninstall/Quit. They return
-    // automatically once a license is activated.
-    let locked = LicenseManager.isExpiredFlag
+    let limitItem = NSMenuItem()
+    limitItem.view = makeHistoryLimitView()
+    menu.addItem(limitItem)
+    menu.addItem(.separator())
 
-    if !locked {
-      let limitItem = NSMenuItem()
-      limitItem.view = makeHistoryLimitView()
-      menu.addItem(limitItem)
-      menu.addItem(.separator())
+    let clearHistoryItem = NSMenuItem(title: "Clear History...", action: #selector(clearHistory), keyEquivalent: "")
+    clearHistoryItem.target = self
+    menu.addItem(clearHistoryItem)
+    menu.addItem(.separator())
 
-      let clearHistoryItem = NSMenuItem(title: "Clear History...", action: #selector(clearHistory), keyEquivalent: "")
-      clearHistoryItem.target = self
-      menu.addItem(clearHistoryItem)
-      menu.addItem(.separator())
+    let exportCSVItem = NSMenuItem(title: "Export CSV (.zip)...", action: #selector(exportCSV), keyEquivalent: "")
+    exportCSVItem.target = self
+    menu.addItem(exportCSVItem)
 
-      let exportCSVItem = NSMenuItem(title: "Export CSV (.zip)...", action: #selector(exportCSV), keyEquivalent: "")
-      exportCSVItem.target = self
-      menu.addItem(exportCSVItem)
+    let exportPDFItem = NSMenuItem(title: "Export PDF...", action: #selector(exportPDF), keyEquivalent: "")
+    exportPDFItem.target = self
+    menu.addItem(exportPDFItem)
 
-      let exportPDFItem = NSMenuItem(title: "Export PDF...", action: #selector(exportPDF), keyEquivalent: "")
-      exportPDFItem.target = self
-      menu.addItem(exportPDFItem)
+    let excludeAppsItem = NSMenuItem(title: "Excluded Apps...", action: #selector(openExcludeApps), keyEquivalent: "")
+    excludeAppsItem.target = self
+    menu.addItem(excludeAppsItem)
 
-      let excludeAppsItem = NSMenuItem(title: "Excluded Apps...", action: #selector(openExcludeApps), keyEquivalent: "")
-      excludeAppsItem.target = self
-      menu.addItem(excludeAppsItem)
-
-      let customizeShortcutItem = NSMenuItem(title: "Customize Shortcut...", action: #selector(openCustomizeShortcut), keyEquivalent: "")
-      customizeShortcutItem.target = self
-      menu.addItem(customizeShortcutItem)
-      menu.addItem(.separator())
-    }
+    let customizeShortcutItem = NSMenuItem(title: "Customize Shortcut...", action: #selector(openCustomizeShortcut), keyEquivalent: "")
+    customizeShortcutItem.target = self
+    menu.addItem(customizeShortcutItem)
+    menu.addItem(.separator())
 
     let helpItem = NSMenuItem(title: "How to Use Copy Cat", action: #selector(showOnboarding), keyEquivalent: "")
     helpItem.target = self
@@ -258,11 +240,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
     menu.addItem(supportItem)
     menu.addItem(.separator())
 
-    if !locked {
-      let accessibilityItem = NSMenuItem(title: "Check Auto-Paste Permission", action: #selector(checkAccessibility), keyEquivalent: "")
-      accessibilityItem.target = self
-      menu.addItem(accessibilityItem)
-    }
+    let accessibilityItem = NSMenuItem(title: "Check Auto-Paste Permission", action: #selector(checkAccessibility), keyEquivalent: "")
+    accessibilityItem.target = self
+    menu.addItem(accessibilityItem)
 
     let uninstallItem = NSMenuItem(title: "Uninstall Copy Cat...", action: #selector(uninstallApp), keyEquivalent: "")
     uninstallItem.target = self
@@ -317,10 +297,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSTextFieldDelegate {
 
   @objc @MainActor func openSettings() {
     AppState.shared.openPreferences()
-  }
-
-  @objc @MainActor func openLicense() {
-    AppState.shared.openLicensePane()
   }
 
   @objc private func openSupport() {
